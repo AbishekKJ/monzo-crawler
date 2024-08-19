@@ -9,6 +9,7 @@ from collections import deque
 from crawler.parser import parse_links
 from crawler.url_manager import URLManager
 from typing import Optional, Set
+from config.config import load_config
 
 
 class Crawler:
@@ -41,10 +42,17 @@ class Crawler:
             requests.Session: The configured session object.
         """
         session = requests.Session()
+        config = load_config()
+        retry_config = config.get("retry", {})
+
+        total_retries = retry_config.get("total", 5)
+        backoff_factor = retry_config.get("backoff_factor", 0.3)
+        status_forcelist = retry_config.get("status_forcelist", [500, 502, 503, 504])
+
         retry_strategy = Retry(
-            total=5,
-            backoff_factor=0.3,
-            status_forcelist=[500, 502, 503, 504],
+            total=total_retries,
+            backoff_factor=backoff_factor,
+            status_forcelist=status_forcelist,
             allowed_methods=["HEAD", "GET", "OPTIONS"]
         )
         adapter = HTTPAdapter(pool_connections=100, pool_maxsize=100, max_retries=retry_strategy)

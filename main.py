@@ -1,6 +1,4 @@
 import argparse
-import os
-from typing import Dict, Any
 from crawler.crawler import Crawler
 from utils import is_valid_url
 from config.config import setup_configuration, load_config

@@ -25,7 +25,7 @@ def load_config() -> Dict[str, Any]:
         raise FileNotFoundError(f"Config file {config_file} not found.")
 
     with open(config_file, 'r') as file:
-        config = yaml.safe_load(file)
+        config = yaml.safe_load(file) or {}
 
     return config
 
@@ -34,9 +34,6 @@ def setup_configuration() -> None:
     """
     Set up configuration including logging.
     """
-    # Load configuration
     config = load_config()
-
-    # Set up logging
     logging_config = config.get("logging", {})
     configure_logger(logging_config)

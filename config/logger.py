@@ -1,4 +1,3 @@
-import os
 import logging
 import json_log_formatter
 from typing import Dict, Any
@@ -17,9 +16,16 @@ class JSONFormatter(json_log_formatter.JSONFormatter):
         Returns:
             Dict[str, Any]: The JSON-structured log record.
         """
-        extra['level'] = record.levelname
-        extra['logger'] = record.name
-        return extra
+        # Create a base JSON record including level and logger name
+        log_record = {
+            'level': record.levelname,
+            'logger': record.name,
+            'message': message
+        }
+        # Add extra fields from the extra dictionary
+        log_record.update(extra)
+
+        return log_record
 
 
 def configure_logger(logging_config: Dict[str, str]) -> None:
@@ -36,14 +42,3 @@ def configure_logger(logging_config: Dict[str, str]) -> None:
     logger = logging.getLogger()
     logger.setLevel(logging_config.get('level', 'INFO'))
     logger.addHandler(handler)
-
-
-def setup_logging() -> None:
-    """
-    Set up logging based on environment using JSONFormatter.
-    """
-    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-    logging_config = {
-        'level': log_level
-    }
-    configure_logger(logging_config)

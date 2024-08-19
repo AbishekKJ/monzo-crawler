@@ -1,5 +1,4 @@
 import pytest
-from unittest.mock import patch, MagicMock
 from urllib.parse import urlparse
 from crawler.url_manager import URLManager
 
