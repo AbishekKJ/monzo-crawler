@@ -11,14 +11,14 @@ from crawler.url_manager import URLManager
 
 
 class Crawler:
-    def __init__(self, start_url, max_depth, max_workers):
+    def __init__(self, start_url, max_depth, max_workers, session=None):
         self.start_url = start_url
         self.allowed_domain = urlparse(start_url).netloc
         self.max_depth = max_depth
         self.max_workers = max_workers
         self.url_manager = URLManager(self.allowed_domain)  # Pass allowed domain
         self.logger = logging.getLogger("crawler")
-        self.session = self._create_session_with_retries()
+        self.session = session or self._create_session_with_retries()
         self.queue = deque()  # Custom queue to manage BFS order
         self.visited = set()
         self.output_file = self.get_output_file_name()
