@@ -21,7 +21,6 @@ class URLManager:
         :return: True if the URL should be visited, False otherwise.
         """
         parsed_url = urlparse(url)
-        # Ensure the domain matches the allowed domain and the URL has not been visited yet
         return parsed_url.netloc == self.allowed_domain and url not in self.visited_urls
 
     def mark_visited(self, url: str) -> None:

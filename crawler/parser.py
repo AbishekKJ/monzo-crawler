@@ -13,10 +13,8 @@ def parse_links(html_content: str, base_url: str) -> Set[str]:
     Returns:
         Set[str]: A set of fully qualified URLs found in the HTML content.
     """
-    # Regular expression to match href links in anchor tags
     href_regex = r'href=[\'"]([^\'" >]+(?: [^\'" >]+)*)[\'"]'
 
-    # Find all matches of the regex in the HTML content
     links = re.findall(href_regex, html_content)
 
     # Resolve relative links using the base URL and handle multiple URLs in a single href
