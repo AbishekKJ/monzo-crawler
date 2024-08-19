@@ -21,7 +21,6 @@ class Crawler:
         self.session = self._create_session_with_retries()
         self.queue = deque()  # Custom queue to manage BFS order
         self.visited = set()
-        self.found_links = set()
         self.output_file = self.get_output_file_name()
 
     def _create_session_with_retries(self):
@@ -32,7 +31,7 @@ class Crawler:
             status_forcelist=[500, 502, 503, 504],
             allowed_methods=["HEAD", "GET", "OPTIONS"]
         )
-        adapter = HTTPAdapter(max_retries=retry_strategy)
+        adapter = HTTPAdapter(pool_connections=100, pool_maxsize=100, max_retries=retry_strategy)
         session.mount("http://", adapter)
         session.mount("https://", adapter)
         return session
@@ -91,7 +90,6 @@ class Crawler:
                     try:
                         links = future.result()
                         if links:
-                            self.found_links.update(links)
                             for link in links:
                                 # Ensure the new link is not visited and enqueue for the next depth level
                                 if link not in self.visited and self.url_manager.should_visit(link, depth + 1):
@@ -105,7 +103,7 @@ class Crawler:
     def write_urls_to_file(self):
         """Write the unique list of URLs to the output file."""
         with open(self.output_file, 'w') as file:
-            for url in sorted(self.found_links):
+            for url in sorted(self.visited):
                 file.write(f"{url}\n")
         self.logger.info(f"Unique URLs written to {self.output_file}")
 

@@ -11,12 +11,15 @@ def parse_links(html_content, base_url):
     :return: A set of fully qualified URLs found in the HTML content.
     """
     # Regular expression to match href links in anchor tags
-    href_regex = r'href=[\'"]?([^\'" >]+)'
+    href_regex = r'href=[\'"]([^\'" >]+(?: [^\'" >]+)*)[\'"]'
 
     # Find all matches of the regex in the HTML content
     links = re.findall(href_regex, html_content)
 
-    # Resolve relative links using the base URL
-    absolute_links = {urljoin(base_url, link) for link in links}
+    # Resolve relative links using the base URL and handle multiple URLs in a single href
+    absolute_links = set()
+    for link_group in links:
+        for link in link_group.split():
+            absolute_links.add(urljoin(base_url, link))
 
     return absolute_links
