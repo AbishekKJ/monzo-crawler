@@ -1,0 +1,7 @@
+crawler:
+  start_url: "https://example.com"
+  max_depth: 2
+  max_workers: 5
+
+logging:
+  level: "INFO"

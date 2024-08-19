@@ -1,0 +1,4 @@
+max_depth: 3
+max_workers: 5
+logging:
+  level: DEBUG

@@ -1,0 +1,4 @@
+max_depth: 6
+max_workers: 45
+logging:
+  level: WARNING
