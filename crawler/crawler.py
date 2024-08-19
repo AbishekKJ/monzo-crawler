@@ -7,6 +7,7 @@ import logging
 from datetime import datetime
 from collections import deque
 from crawler.parser import parse_links
+from crawler.robots_parser import RobotsParser
 from crawler.url_manager import URLManager
 from typing import Optional, Set
 from config.config import load_config
@@ -33,6 +34,10 @@ class Crawler:
         self.queue: deque = deque()  # Custom queue to manage BFS order
         self.visited: Set[str] = set()
         self.output_file: str = self.get_output_file_name()
+        self.robots_parser: Optional[RobotsParser] = None
+
+        # Fetch and parse robots.txt
+        self._load_robots_txt()
 
     def _create_session_with_retries(self) -> requests.Session:
         """
@@ -60,6 +65,18 @@ class Crawler:
         session.mount("https://", adapter)
         return session
 
+    def _load_robots_txt(self) -> None:
+        """
+        Fetch and parse robots.txt for the allowed domain.
+        """
+        robots_url = f"https://{self.allowed_domain}/robots.txt"
+        response = self.session.get(robots_url)
+        if response.status_code == 200:
+            self.robots_parser = RobotsParser(response.text)
+            self.logger.info("Successfully loaded and parsed robots.txt")
+        else:
+            self.logger.warning(f"Failed to fetch robots.txt from {robots_url}")
+
     def get_output_file_name(self) -> str:
         """
         Generate a timestamped filename for output.
@@ -80,6 +97,10 @@ class Crawler:
         Returns:
             Optional[str]: The content of the URL or None if the request failed.
         """
+        if self.robots_parser and not self.robots_parser.is_allowed(url):
+            self.logger.info(f"URL blocked by robots.txt: {url}")
+            return None
+
         try:
             response = self.session.get(url, timeout=5)
             response.raise_for_status()
