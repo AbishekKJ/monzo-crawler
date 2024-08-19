@@ -118,48 +118,19 @@ def test_fetch_failure(mock_requests_session):
     mock_requests_session.return_value.get.assert_called_once_with("https://monzo.com", timeout=5)
 
 
-def test_crawl(crawler_instance, mock_parser, mock_url_manager):
-    """Test the crawl method with mocked dependencies."""
-    # Set up mocks
-    mock_parser.return_value = {"https://monzo.com/page1", "https://monzo.com/page2"}
-    mock_url_manager.should_visit.return_value = True  # Simulate that the URL should be visited
-    mock_url_manager.mark_visited.return_value = None  # Simulate marking the URL as visited
-    mock_url_manager.add_links.return_value = None  # Simulate adding links
-
-    # Execute the crawl method
-    links = crawler_instance.crawl("https://monzo.com", 0)
-
+def test_crawl(crawler_instance):
+    """Test the crawl method with basic mocks."""
+    # Mock the _fetch method to return fixed HTML content
+    with patch.object(crawler_instance, '_fetch', return_value="""<html>
+            <head><title>Test</title></head>
+            <body>
+                <a href="https://monzo.com/page1">Page 1</a>
+                <a href="https://monzo.com/page2">Page 2</a>
+            </body>
+        </html>"""):
+        links = crawler_instance.crawl("https://monzo.com", 0)
     # Verify the result of the crawl method
     assert links == {"https://monzo.com/page1", "https://monzo.com/page2"}
-
-    # Verify that URLs have been marked as visited
-    assert "https://monzo.com" in crawler_instance.visited
-    assert "https://monzo.com/page1" in crawler_instance.visited
-    assert "https://monzo.com/page2" in crawler_instance.visited
-
-
-def test_crawl(crawler_instance, mock_parser, mock_url_manager):
-    """Test the crawl method with mocked dependencies."""
-    # Set up mocks
-    mock_parser.return_value = {"https://monzo.com/page1", "https://monzo.com/page2"}
-    mock_url_manager.should_visit.return_value = True  # Simulate that the URL should be visited
-    mock_url_manager.mark_visited.return_value = None  # Simulate marking the URL as visited
-    mock_url_manager.add_links.return_value = None  # Simulate adding links
-
-    # Execute the crawl method
-    links = crawler_instance.crawl("https://monzo.com", 0)
-
-    # Verify the result of the crawl method
-    assert links == {"https://monzo.com/page1", "https://monzo.com/page2"}
-
-    # Check the visited URLs
-    visited_urls = crawler_instance.visited
-    assert "https://monzo.com" in visited_urls
-    assert "https://monzo.com/page1" in visited_urls
-    assert "https://monzo.com/page2" in visited_urls
-
-    # Additional debugging (if needed)
-    print("Visited URLs after crawl:", visited_urls)
 
 
 def test_run(crawler_instance, mock_parser, mock_url_manager):

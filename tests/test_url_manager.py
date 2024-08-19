@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from urllib.parse import urlparse
 from crawler.url_manager import URLManager
 
@@ -14,15 +14,15 @@ def test_should_visit(url_manager):
     """Test the should_visit method."""
     # Test case: URL is within the allowed domain and not visited
     url = "https://monzo.com/page"
-    assert url_manager.should_visit(url, 0) == True
+    assert url_manager.should_visit(url) == True
 
     # Test case: URL is outside the allowed domain
     url = "https://otherdomain.com/page"
-    assert url_manager.should_visit(url, 0) == False
+    assert url_manager.should_visit(url) == False
 
     # Test case: URL has been visited
     url_manager.mark_visited(url)
-    assert url_manager.should_visit(url, 0) == False
+    assert url_manager.should_visit(url) == False
 
 
 def test_mark_visited(url_manager):

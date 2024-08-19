@@ -1,36 +1,18 @@
 import argparse
 import os
-import logging
+from typing import Dict, Any
 from crawler.crawler import Crawler
-from config.config import load_config, setup_logging
+from utils import is_valid_url
+from config.config import setup_configuration, load_config
 
 
-def load_config():
-    """Load environment-specific configuration from YAML files."""
-    environment = os.getenv("ENVIRONMENT", "dev")
-    config_file = f'config/{environment}.yaml'
+def main() -> None:
+    """
+    Main entry point for running the crawler from the command line.
+    """
+    # Set up configuration including logging
+    setup_configuration()
 
-    if not os.path.exists(config_file):
-        raise FileNotFoundError(f"Config file {config_file} not found.")
-
-    import yaml
-    with open(config_file, 'r') as file:
-        config = yaml.safe_load(file)
-    return config
-
-
-def setup_logging():
-    """Set up logging based on environment."""
-    log_level = os.getenv("LOG_LEVEL", "INFO")
-    logging.basicConfig(
-        level=log_level,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
-    logging.info(f"Logging initialized with level {log_level}")
-
-
-def main():
-    """Main entry point for running the crawler from the command line."""
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Web Crawler")
     parser.add_argument("start_url", help="The base URL to start crawling")
@@ -38,11 +20,12 @@ def main():
     parser.add_argument("--max_workers", type=int, default=5, help="Number of concurrent workers")
     args = parser.parse_args()
 
-    # Load configuration and set up the environment
-    setup_logging()
-    config = load_config()
+    # Validate the start URL
+    if not is_valid_url(args.start_url):
+        raise ValueError(f"The start URL '{args.start_url}' is not valid.")
 
-    # Extracting config settings
+    # Extract configuration settings
+    config = load_config()
     max_depth = args.max_depth or config.get("max_depth", 3)
     max_workers = args.max_workers or config.get("max_workers", 5)
 
