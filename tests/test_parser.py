@@ -1,5 +1,6 @@
 import pytest
 from crawler.parser import parse_links
+from exceptions import InvalidHTMLContentError
 
 
 def test_parse_links_absolute_urls() -> None:
@@ -68,11 +69,9 @@ def test_parse_links_empty_html() -> None:
     """Test empty HTML content."""
     html_content = ''
     base_url = "https://monzo.com"
-    expected_links = set()
-
-    result = parse_links(html_content, base_url)
-
-    assert result == expected_links
+    with pytest.raises(InvalidHTMLContentError,
+                       match="Invalid HTML content provided. Content must be a non-empty string."):
+        parse_links(html_content, base_url)
 
 
 def test_parse_links_multiple_hrefs() -> None:

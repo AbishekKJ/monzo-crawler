@@ -11,6 +11,8 @@ from crawler.robots_parser import RobotsParser
 from crawler.url_manager import URLManager
 from typing import Optional, Set
 from config.config import load_config
+import threading
+from exceptions import CrawlerException, RobotsDisallowedError, FetchError
 
 
 class Crawler:
@@ -26,6 +28,9 @@ class Crawler:
         self.visited: Set[str] = set()
         self.output_file: str = self.get_output_file_name()
         self.robots_parser: Optional[RobotsParser] = None
+
+        self.queue_lock = threading.Lock()
+        self.visited_lock = threading.Lock()
 
         self._load_robots_txt()
 
@@ -65,12 +70,12 @@ class Crawler:
 
     def get_output_file_name(self) -> str:
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        return f"urls_{timestamp}.json"
+        return f"out_file_{timestamp}.json"
 
     def _fetch(self, url: str) -> Optional[str]:
         if self.robots_parser and not self.robots_parser.is_allowed(url):
             self.logger.info(f"URL blocked by robots.txt: {url}")
-            return None
+            raise RobotsDisallowedError(url)
 
         try:
             response = self.session.get(url, timeout=5)
@@ -78,19 +83,22 @@ class Crawler:
             return response.text
         except requests.RequestException as e:
             self.logger.error(f"Failed to fetch {url}: {e}")
-            return None
+            raise FetchError(url, str(e))
 
     def crawl(self, url: str, depth: int) -> Optional[Set[str]]:
         self.logger.info(f"Crawling URL: {url} at depth: {depth}")
-        self.url_manager.mark_visited(url)
-        self.visited.add(url)
 
-        html_content = self._fetch(url)
-        if not html_content:
-            return None
+        try:
+            html_content = self._fetch(url)
+        except (FetchError, RobotsDisallowedError) as e:
+            self.logger.error(str(e))
+            return set()
+
+        with self.visited_lock:
+            self.url_manager.mark_visited(url)
+            self.visited.add(url)
 
         links = parse_links(html_content, url)
-        self.url_manager.add_links(links)
 
         return links
 
@@ -99,26 +107,32 @@ class Crawler:
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             while self.queue:
-                futures = {}
+                with self.queue_lock:
+                    futures = {}
 
-                for _ in range(len(self.queue)):
-                    url, depth = self.queue.popleft()
+                    for _ in range(len(self.queue)):
+                        url, depth = self.queue.popleft()
 
-                    if depth <= self.max_depth and self.url_manager.should_visit(url):
-                        futures[executor.submit(self.crawl, url, depth)] = (url, depth)
+                        if depth <= self.max_depth and self.url_manager.should_visit(url):
+                            futures[executor.submit(self.crawl, url, depth)] = (url, depth)
 
                 for future in as_completed(futures):
                     url, depth = futures[future]
                     try:
                         links = future.result()
                         if links:
-                            for link in links:
-                                if link not in self.visited and self.url_manager.should_visit(link):
-                                    self.queue.append((link, depth + 1))
+                            with self.queue_lock:
+                                for link in links:
+                                    with self.visited_lock:
+                                        if link not in self.visited and self.url_manager.should_visit(link):
+                                            self.queue.append((link, depth + 1))
+                    except CrawlerException as e:
+                        self.logger.error(f"CrawlerException during crawling {url}: {e}")
                     except Exception as e:
-                        self.logger.error(f"Error during crawling {url}: {e}")
+                        self.logger.error(f"Unexpected error during crawling {url}: {e}")
                     finally:
                         futures.pop(future)
+
         self.write_urls_to_file()
 
     def write_urls_to_file(self) -> None:

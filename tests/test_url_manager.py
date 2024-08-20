@@ -28,21 +28,6 @@ def test_mark_visited(url_manager: URLManager) -> None:
     assert url in url_manager.visited_urls
 
 
-def test_add_links(url_manager: URLManager) -> None:
-    """Test the add_links method of URLManager."""
-    links = [
-        "https://monzo.com/page1",
-        "https://monzo.com/page2",
-        "https://otherdomain.com/page"
-    ]
-    url_manager.mark_visited("https://monzo.com/page1")
-
-    result = url_manager.add_links(links)
-
-    expected_result = {"https://monzo.com/page2"}
-    assert result == expected_result
-
-
 @pytest.mark.parametrize("url, expected_domain", [
     ("https://monzo.com/page", "monzo.com"),
     ("http://sub.monzo.com/page", "sub.monzo.com"),

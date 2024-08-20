@@ -8,6 +8,7 @@ import requests
 import logging
 from collections import deque
 from urllib.parse import urlparse
+from requests.exceptions import RequestException
 
 
 @pytest.fixture
@@ -49,7 +50,7 @@ def test_initialization(crawler_instance: Crawler) -> None:
     assert isinstance(crawler.session, requests.Session)
     assert isinstance(crawler.queue, deque)
     assert isinstance(crawler.visited, set)
-    assert crawler.output_file.startswith("urls_")
+    assert crawler.output_file.startswith("out_file_")
 
 
 def test_create_session_with_retries(mock_requests_session: MagicMock) -> None:
@@ -91,9 +92,8 @@ def test_fetch_failure(mock_requests_session: MagicMock) -> None:
     crawler = Crawler(start_url="https://monzo.com", max_depth=2, max_workers=2,
                       session=mock_requests_session.return_value)
 
-    html_content = crawler._fetch("https://monzo.com")
-
-    assert html_content is None
+    with pytest.raises(RequestException, match="Failed to fetch"):
+        crawler._fetch("https://monzo.com")
 
 
 def test_crawl(crawler_instance: Crawler) -> None:
