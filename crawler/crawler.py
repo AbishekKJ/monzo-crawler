@@ -17,6 +17,14 @@ from exceptions import CrawlerException, RobotsDisallowedError, FetchError
 
 class Crawler:
     def __init__(self, start_url: str, max_depth: int, max_workers: int, session: Optional[requests.Session] = None):
+        """
+        Initializes the Crawler with the starting URL, maximum depth, and number of workers.
+
+        :param start_url: The URL to start crawling from.
+        :param max_depth: The maximum depth to crawl.
+        :param max_workers: The maximum number of concurrent workers.
+        :param session: Optional requests.Session to use for HTTP requests.
+        """
         self.start_url: str = start_url
         self.allowed_domain: str = urlparse(start_url).netloc
         self.max_depth: int = max_depth
@@ -35,6 +43,11 @@ class Crawler:
         self._load_robots_txt()
 
     def _create_session_with_retries(self) -> requests.Session:
+        """
+        Creates a requests.Session with retry configuration.
+
+        :return: A configured requests.Session instance.
+        """
         session = requests.Session()
         config = load_config()
         retry_config = config.get("retry", {})
@@ -55,6 +68,11 @@ class Crawler:
         return session
 
     def _load_robots_txt(self) -> None:
+        """
+        Loads and parses the robots.txt file from the allowed domain to respect crawl restrictions.
+
+        :raises: Requests exceptions if loading robots.txt fails.
+        """
         robots_url = f"https://{self.allowed_domain}/robots.txt"
         try:
             response = self.session.get(robots_url)
@@ -69,10 +87,23 @@ class Crawler:
             self.robots_parser = None
 
     def get_output_file_name(self) -> str:
+        """
+        Generates the output file name based on the current timestamp.
+
+        :return: The generated output file name.
+        """
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         return f"out_file_{timestamp}.json"
 
     def _fetch(self, url: str) -> Optional[str]:
+        """
+        Fetches the content of the given URL. Raises an exception if the request fails or the URL is blocked.
+
+        :param url: The URL to fetch content from.
+        :return: The HTML content of the URL if successful, otherwise raises FetchError.
+        :raises: FetchError if the request fails.
+        :raises: RobotsDisallowedError if the URL is blocked by robots.txt.
+        """
         if self.robots_parser and not self.robots_parser.is_allowed(url):
             self.logger.info(f"URL blocked by robots.txt: {url}")
             raise RobotsDisallowedError(url)
@@ -86,6 +117,13 @@ class Crawler:
             raise FetchError(url, str(e))
 
     def crawl(self, url: str, depth: int) -> Optional[Set[str]]:
+        """
+        Crawls a given URL and extracts links from the page. Handles errors and updates visited URLs.
+
+        :param url: The URL to crawl.
+        :param depth: The current depth of crawling.
+        :return: A set of links found on the page or an empty set if an error occurs.
+        """
         self.logger.info(f"Crawling URL: {url} at depth: {depth}")
 
         try:
@@ -103,6 +141,13 @@ class Crawler:
         return links
 
     def run(self) -> None:
+        """
+        Starts the crawling process. Manages the queue of URLs to visit and handles concurrency.
+
+        This method initializes the queue with the start URL, creates a ThreadPoolExecutor to handle concurrent crawling,
+        and processes each URL until the queue is empty. It updates the queue with new links and writes the visited URLs
+        to a file upon completion.
+        """
         self.queue.append((self.start_url, 0))
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
@@ -136,6 +181,11 @@ class Crawler:
         self.write_urls_to_file()
 
     def write_urls_to_file(self) -> None:
+        """
+        Writes the visited URLs to the output file.
+
+        The file is named based on the timestamp of when the crawling was completed. Each URL is written on a new line.
+        """
         with open(self.output_file, 'w') as file:
             for url in sorted(self.visited):
                 file.write(f"{url}\n")
