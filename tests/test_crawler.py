@@ -8,6 +8,7 @@ import requests
 import logging
 from collections import deque
 from urllib.parse import urlparse
+from exceptions import FetchError
 from requests.exceptions import RequestException
 
 
@@ -87,14 +88,16 @@ def test_fetch_success(mock_requests_session: MagicMock) -> None:
 
 def test_fetch_failure(mock_requests_session: MagicMock) -> None:
     """Test the fetch method for failed requests."""
-    mock_requests_session.return_value.get.side_effect = requests.RequestException("Failed to fetch")
+    # Mock the side effect of the session's get method to raise a RequestException
+    mock_requests_session.return_value.get.side_effect = RequestException("Failed to fetch")
 
+    # Create an instance of Crawler with the mocked session
     crawler = Crawler(start_url="https://monzo.com", max_depth=2, max_workers=2,
                       session=mock_requests_session.return_value)
 
-    with pytest.raises(RequestException, match="Failed to fetch"):
+    # Check that _fetch raises FetchError
+    with pytest.raises(FetchError, match="Failed to fetch https://monzo.com: Failed to fetch"):
         crawler._fetch("https://monzo.com")
-
 
 def test_crawl(crawler_instance: Crawler) -> None:
     """Test the crawl method with basic mocks."""
