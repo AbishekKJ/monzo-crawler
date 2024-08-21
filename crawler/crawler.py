@@ -1,6 +1,8 @@
 import requests
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from requests.adapters import HTTPAdapter
+from requests.exceptions import HTTPError
 from urllib3.util.retry import Retry
 from urllib.parse import urlparse
 import logging
@@ -16,7 +18,7 @@ from exceptions import CrawlerException, RobotsDisallowedError, FetchError
 
 
 class Crawler:
-    def __init__(self, start_url: str, max_depth: int, max_workers: int, session: Optional[requests.Session] = None):
+    def __init__(self, start_url: str, max_depth: int, workers: int, session: Optional[requests.Session] = None):
         """
         Initializes the Crawler with the starting URL, maximum depth, and number of workers.
 
@@ -28,7 +30,7 @@ class Crawler:
         self.start_url: str = start_url
         self.allowed_domain: str = urlparse(start_url).netloc
         self.max_depth: int = max_depth
-        self.max_workers: int = max_workers
+        self.workers: int = workers
         self.url_manager: URLManager = URLManager(self.allowed_domain)
         self.logger: logging.Logger = logging.getLogger("crawler")
         self.session: requests.Session = session or self._create_session_with_retries()
@@ -52,8 +54,8 @@ class Crawler:
         config = load_config()
         retry_config = config.get("retry", {})
 
-        total_retries = retry_config.get("total", 5)
-        backoff_factor = retry_config.get("backoff_factor", 0.3)
+        total_retries = retry_config.get("total", 3)
+        backoff_factor = retry_config.get("backoff_factor", 1)
         status_forcelist = retry_config.get("status_forcelist", [500, 502, 503, 504])
 
         retry_strategy = Retry(
@@ -150,7 +152,7 @@ class Crawler:
         """
         self.queue.append((self.start_url, 0))
 
-        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+        with ThreadPoolExecutor(max_workers=self.workers) as executor:
             while self.queue:
                 with self.queue_lock:
                     futures = {}

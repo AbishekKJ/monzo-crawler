@@ -14,7 +14,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Web Crawler")
     parser.add_argument("start_url", help="The base URL to start crawling")
     parser.add_argument("--max_depth", type=int, default=3, help="Maximum crawling depth")
-    parser.add_argument("--max_workers", type=int, default=5, help="Number of concurrent workers")
+    parser.add_argument("--workers", type=int, default=5, help="Number of concurrent workers")
     args = parser.parse_args()
 
     if not is_valid_url(args.start_url):
@@ -22,9 +22,9 @@ def main() -> None:
 
     config = load_config()
     max_depth = args.max_depth or config.get("max_depth", 3)
-    max_workers = args.max_workers or config.get("max_workers", 5)
+    workers = args.workers or config.get("workers", 5)
 
-    crawler = Crawler(start_url=args.start_url, max_depth=max_depth, max_workers=max_workers)
+    crawler = Crawler(start_url=args.start_url, max_depth=max_depth, workers=workers)
     crawler.run()
 
 
