@@ -36,7 +36,7 @@ def mock_requests_session() -> MagicMock:
 @pytest.fixture
 def crawler_instance(mock_parser: MagicMock, mock_url_manager: URLManager) -> Crawler:
     """Fixture to create a Crawler instance with mocked dependencies."""
-    return Crawler(start_url="https://monzo.com", max_depth=2, max_workers=2)
+    return Crawler(start_url="https://monzo.com", max_depth=2, workers=2)
 
 
 def test_initialization(crawler_instance: Crawler) -> None:
@@ -45,7 +45,7 @@ def test_initialization(crawler_instance: Crawler) -> None:
     assert crawler.start_url == "https://monzo.com"
     assert crawler.allowed_domain == "monzo.com"
     assert crawler.max_depth == 2
-    assert crawler.max_workers == 2
+    assert crawler.workers == 2
     assert isinstance(crawler.url_manager, URLManager)
     assert isinstance(crawler.logger, logging.Logger)
     assert isinstance(crawler.session, requests.Session)
@@ -56,7 +56,7 @@ def test_initialization(crawler_instance: Crawler) -> None:
 
 def test_create_session_with_retries(mock_requests_session: MagicMock) -> None:
     """Test the creation of a requests session with retries."""
-    crawler = Crawler(start_url="https://monzo.com", max_depth=2, max_workers=2)
+    crawler = Crawler(start_url="https://monzo.com", max_depth=2, workers=2)
     session = crawler._create_session_with_retries()
 
     assert session is mock_requests_session
@@ -67,7 +67,7 @@ def test_create_session_with_retries(mock_requests_session: MagicMock) -> None:
     http_adapter = mock_requests_session.mount.call_args_list[0][0][1]
     assert isinstance(http_adapter, HTTPAdapter)
     assert http_adapter.max_retries.total == 3
-    assert http_adapter.max_retries.backoff_factor == 0.3
+    assert http_adapter.max_retries.backoff_factor == 1
 
 
 def test_fetch_success(mock_requests_session: MagicMock) -> None:
@@ -78,7 +78,7 @@ def test_fetch_success(mock_requests_session: MagicMock) -> None:
 
     mock_requests_session.return_value.get.return_value = mock_response
 
-    crawler = Crawler(start_url="https://monzo.com", max_depth=2, max_workers=2,
+    crawler = Crawler(start_url="https://monzo.com", max_depth=2, workers=2,
                       session=mock_requests_session.return_value)
 
     html_content = crawler._fetch("https://monzo.com")
@@ -92,7 +92,7 @@ def test_fetch_failure(mock_requests_session: MagicMock) -> None:
     mock_requests_session.return_value.get.side_effect = RequestException("Failed to fetch")
 
     # Create an instance of Crawler with the mocked session
-    crawler = Crawler(start_url="https://monzo.com", max_depth=2, max_workers=2,
+    crawler = Crawler(start_url="https://monzo.com", max_depth=2, workers=2,
                       session=mock_requests_session.return_value)
 
     # Check that _fetch raises FetchError

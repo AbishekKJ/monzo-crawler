@@ -1,8 +1,6 @@
 import requests
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from requests.adapters import HTTPAdapter
-from requests.exceptions import HTTPError
 from urllib3.util.retry import Retry
 from urllib.parse import urlparse
 import logging
