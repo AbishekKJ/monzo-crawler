@@ -26,21 +26,26 @@ To run
 poetry run python main.py https://monzo.com --max_depth=1 --workers=5
 ```
 
-Configuration :
+Configuration:
+
 The following attributes are configurable via config/<environment>.yaml
 
 workers:
 
-controls the maximum number of threads that can run concurrently
+<mark>controls the maximum number of threads that can run concurrently</mark>
 
 max_depth:
-number of levels to go down while fetching urls. Each time we follow the links present on a url, we increase a level.
+
+<mark>number of levels to go down while fetching urls. Each time we follow the links present on a url, we increase a level</mark>
 
 total:
-number of retries to make if fetching of url fails
+
+<mark>number of retries to make if fetching of url fails<mark>
 
 backoff_factor:
-The base value for introducing a delay between retries, preventing server overload.
+
+<mark>The base value for introducing a delay between retries, preventing server overload</mark>
 
 status_forcelist:
-A list of HTTP status codes that should trigger a retry for Python requests
+
+<mark>A list of HTTP status codes that should trigger a retry for Python requests</mark>
