@@ -12,7 +12,7 @@ curl -sSL https://install.python-poetry.org | python3 -
 ```
 
 Extract the Zip File
-Assuming the user has downloaded the zip file, they should extract it to a directory:
+Assuming the user has downloaded the zip file, they should extract it to a directory
 
 Install Dependencies
 After extracting the files, the user can install all dependencies with Poetry:
